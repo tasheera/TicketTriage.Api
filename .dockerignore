@@ -1,0 +1,15 @@
+bin/
+obj/
+.git/
+.gitignore
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+node_modules/
+.env
+.env.local
+launchSettings.json
+appsettings.Development.json
