@@ -38,12 +38,41 @@ namespace TicketTriage.Api
 
             if (ticket is null)
             {
-                return Problem (statusCode:404, title: "Ticket not found", detail: $"No ticket found with id {id}" );
+                return Problem(statusCode: 404, title: "Ticket not found", detail: $"No ticket found with id {id}");
             }
 
             return Ok(ticket.ToResponse());
         }
 
+
+
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateTicketStatus(int id, UpdateTicketStatusRequest request)
+        {
+            var ticket = await _context.Tickets.FindAsync(id);
+
+            if (ticket is null)
+            {
+                return Problem(statusCode: 404, title: "Ticket not found", detail: $"No ticket found with id {id}");
+            }
+
+            if (!Enum.TryParse<TicketStatus>(request.Status, ignoreCase: true, out var newStatus))
+            {
+                return Problem (
+                    statusCode: 400,
+                    title: "Invalid status value",
+                    detail: $"Invalid status. Valid values : {string.Join(", ", Enum.GetNames<TicketStatus>())}"
+                );
+            }
+
+            ticket.Status = newStatus;
+            await _context.SaveChangesAsync();
+
+            return Ok(ticket.ToResponse());
+
+
+        }
 
     }
 }
