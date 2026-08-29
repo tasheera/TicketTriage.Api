@@ -9,10 +9,12 @@ namespace TicketTriage.Api
     public class TicketsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly GroqService _groq;
 
-        public TicketsController(AppDbContext context)
+        public TicketsController(AppDbContext context, GroqService groq)
         {
             _context = context;
+            _groq = groq;
         }
 
         [HttpGet]
@@ -59,8 +61,6 @@ namespace TicketTriage.Api
 
             return Ok(ticketList.Select(t => t.ToResponse()).ToList());
 
-
-
         }
 
 
@@ -70,7 +70,21 @@ namespace TicketTriage.Api
         {
             var ticket = request.ToEntity();
 
+            
             _context.Tickets.Add(ticket);
+            await _context.SaveChangesAsync();
+
+            var result = await _groq.ClassifyTicketAsync(
+                request.Subject,
+                request.Description
+            );
+
+            ticket.Category = result.Category;
+            ticket.Priority = result.Priority;
+            ticket.Sentiment = result.Sentiment;
+            ticket.AiReasoning = result.Reasoning;
+
+            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(
