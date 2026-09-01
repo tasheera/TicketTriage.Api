@@ -8,6 +8,7 @@ public class GroqService
 {
     private readonly HttpClient _httpClient;
     private readonly string _model;
+    private readonly ILogger<GroqService> _logger;
 
     private static readonly object ClassificationSchema = new
     {
@@ -33,10 +34,11 @@ public class GroqService
         - reasoning: one short sentence (under 20 words) explaining your classification.
         """;
 
-    public GroqService(HttpClient httpClient, IConfiguration configuration)
+    public GroqService(HttpClient httpClient, IConfiguration configuration, ILogger<GroqService> logger)
     {
         _httpClient = httpClient;
         _model = configuration["Groq:Model"] ?? "openai/gpt-oss-20b";
+        _logger = logger;
     }
 
     public async Task<GroqClassificationResult> ClassifyTicketAsync(string subject, string description)
@@ -58,12 +60,38 @@ public class GroqService
             )
         );
 
+        try {
+
         var httpResponse = await _httpClient.PostAsJsonAsync("chat/completions", request);
         httpResponse.EnsureSuccessStatusCode();
 
         var groqResponse = await httpResponse.Content.ReadFromJsonAsync<GroqChatResponse>();
         var content = groqResponse!.Choices[0].Message.Content;
 
+            if (string.IsNullOrEmpty(content))
+            {
+                _logger.LogWarning("Groq returned an empty response");
+                return null;
+            }
+
         return JsonSerializer.Deserialize<GroqClassificationResult>(content)!;
+
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning (ex, "Groq classification failed: HTTP error (network issue, rate limit, or server error)");
+            return null;
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogWarning(ex, "Groq classification failed: request timed out");
+            return null;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Groq classification failed: could not parse response");
+            return null;
+        }
+
     }
 }
