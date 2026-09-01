@@ -6,7 +6,8 @@ public record GroqChatRequest
 (
     [property: JsonPropertyName("model")] string Model, // property: JsonPropertyName used for C# naming conventions(snake_case vs PascalCase)
     [property: JsonPropertyName("messages")] List<GroqMessage> Messages,
-    [property: JsonPropertyName("response_format")] GroqResponseFormat ResponseFormat
+    [property: JsonPropertyName("response_format")] GroqResponseFormat ResponseFormat,
+    [property: JsonPropertyName("temperature")] double Temperature = 0
 );
 
 
