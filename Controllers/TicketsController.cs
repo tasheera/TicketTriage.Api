@@ -70,7 +70,7 @@ namespace TicketTriage.Api
         {
             var ticket = request.ToEntity();
 
-            
+
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync();
 
@@ -79,12 +79,22 @@ namespace TicketTriage.Api
                 request.Description
             );
 
-            ticket.Category = result.Category;
-            ticket.Priority = result.Priority;
-            ticket.Sentiment = result.Sentiment;
-            ticket.AiReasoning = result.Reasoning;
+            if (result is not null)
+            {
 
-            
+                ticket.Category = result.Category;
+                ticket.Priority = result.Priority;
+                ticket.Sentiment = result.Sentiment;
+                ticket.AiReasoning = result.Reasoning;
+            }
+            else
+            {
+                ticket.Category = "Unclassified";
+                ticket.Priority = "Medium";
+                ticket.Sentiment = "Unclassified";
+                ticket.AiReasoning = "Automatic classification unavailable - please review manually.";
+            }
+
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(
