@@ -25,14 +25,14 @@ public class GroqService
     };
 
     private const string SystemPrompt = """
-        You are a support ticket triage assistant. Classify each incoming ticket based on its subject and description.
+    You are a support ticket triage assistant. Classify each incoming ticket based on its subject and description.
 
-        Guidelines:
-        - category: Technical = bugs, errors, crashes. Billing = payments, invoices, refunds. Account = login, password, access issues. General = anything else, including feedback and questions.
-        - priority: Urgent = customer blocked right now or mentions a deadline/critical issue. High = significant impact but not blocking. Medium = normal issue, no urgency signals. Low = minor issue or non-critical suggestion.
-        - sentiment: Frustrated = customer expresses annoyance, anger, or repeated failed attempts. Neutral = matter-of-fact tone. Positive = compliment or calm feature request.
-        - reasoning: one short sentence (under 20 words) explaining your classification.
-        """;
+    Guidelines:
+    - category: Technical = bugs, errors, crashes. Billing = payments, invoices, refunds. Account = login, password, access issues. General = anything else, including feedback and questions.
+    - priority: Urgent = customer explicitly states they are blocked right now, mentions a deadline, or uses emergency language ("right now", "immediately", "today"). Do NOT classify as Urgent based on emotional intensity alone — strong or frustrated language without an explicit time constraint or blocking impact is High, not Urgent. High = significant impact but not blocking, no explicit deadline. Medium = normal issue, no urgency signals either way. Low = no urgency signals present, OR the customer explicitly states they are not in a hurry ("no rush", "not urgent", "someday", "whenever").
+    - sentiment: Frustrated = customer expresses annoyance, anger, or repeated failed attempts. Neutral = matter-of-fact tone. Positive = compliment or calm feature request. Judge tone only, independent of priority — a calmly-written ticket about an urgent issue is still Neutral, and an angry ticket about a minor issue is still Frustrated. Do not let urgency influence the sentiment label or vice versa.
+    - reasoning: one short sentence (under 20 words) explaining your classification.
+    """;
 
     public GroqService(HttpClient httpClient, IConfiguration configuration, ILogger<GroqService> logger)
     {
@@ -60,13 +60,14 @@ public class GroqService
             )
         );
 
-        try {
+        try
+        {
 
-        var httpResponse = await _httpClient.PostAsJsonAsync("chat/completions", request);
-        httpResponse.EnsureSuccessStatusCode();
+            var httpResponse = await _httpClient.PostAsJsonAsync("chat/completions", request);
+            httpResponse.EnsureSuccessStatusCode();
 
-        var groqResponse = await httpResponse.Content.ReadFromJsonAsync<GroqChatResponse>();
-        var content = groqResponse!.Choices[0].Message.Content;
+            var groqResponse = await httpResponse.Content.ReadFromJsonAsync<GroqChatResponse>();
+            var content = groqResponse!.Choices[0].Message.Content;
 
             if (string.IsNullOrEmpty(content))
             {
@@ -74,12 +75,12 @@ public class GroqService
                 return null;
             }
 
-        return JsonSerializer.Deserialize<GroqClassificationResult>(content)!;
+            return JsonSerializer.Deserialize<GroqClassificationResult>(content)!;
 
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning (ex, "Groq classification failed: HTTP error (network issue, rate limit, or server error)");
+            _logger.LogWarning(ex, "Groq classification failed: HTTP error (network issue, rate limit, or server error)");
             return null;
         }
         catch (TaskCanceledException ex)
