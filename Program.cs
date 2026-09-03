@@ -52,6 +52,35 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+//b-crypt password - initial agent
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    if (!db.Agents.Any())
+    {
+        var seedEmail = builder.Configuration["SEED_AGENT_EMAIL"];
+        var seedPassword = builder.Configuration["SEED_AGENT_PASSWORD"];
+        var seedName = builder.Configuration["SEED_AGENT_NAME"] ?? "Admin";
+
+        if(!string.IsNullOrEmpty(seedEmail) && !string.IsNullOrEmpty(seedPassword))
+        {
+            var agent = new Agent
+            {
+                Name = seedEmail,
+                Email = seedEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(seedPassword),
+                Role = AgentRole.Admin
+            };
+
+            db.Agents.Add(agent);
+            db.SaveChanges();
+        }
+    }
+}
+
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
