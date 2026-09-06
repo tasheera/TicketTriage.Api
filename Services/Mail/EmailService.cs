@@ -29,7 +29,6 @@ public class EmailService : IEmailService
         <table style="border-collapse: collapse; width: 100%;">
             <tr><td style="padding: 8px; font-weight: bold;">Ticket ID</td><td style="padding: 8px;">#{ticket.Id}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">{ticket.Subject}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Category</td><td style="padding: 8px;">{ticket.Category ?? "Pending"}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Submitted At</td><td style="padding: 8px;">{ticket.CreatedAt:MMM dd, yyyy hh:mm tt} (UTC)</td></tr>
         </table>
         <hr/>
