@@ -59,6 +59,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+
+
+//reg auth tokenserive
+builder.Services.AddScoped<TokenService>();
+
 // Add services to the container.
 
 builder.Services.AddControllers();
