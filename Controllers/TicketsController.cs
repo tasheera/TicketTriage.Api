@@ -12,15 +12,15 @@ namespace TicketTriage.Api
     {
         private readonly AppDbContext _context;
         private readonly GroqService _groq;
-
         private readonly IEmailService _emailService;
+        private readonly ILogger<TicketsController> _logger;
 
-
-        public TicketsController(AppDbContext context, GroqService groq, IEmailService emailService)
+        public TicketsController(AppDbContext context, GroqService groq, IEmailService emailService, ILogger<TicketsController> logger)
         {
             _context = context;
             _groq = groq;
             _emailService = emailService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -103,8 +103,15 @@ namespace TicketTriage.Api
 
             await _context.SaveChangesAsync();
 
-            await _emailService.SendConfirmationAsync(ticket);
-            
+            try
+            {
+                await _emailService.SendConfirmationAsync(ticket);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send confirmation email for ticket #{TicketId}", ticket.Id);
+            }
+
             return CreatedAtAction(
                 nameof(GetTicket),
                 new { id = ticket.Id },
