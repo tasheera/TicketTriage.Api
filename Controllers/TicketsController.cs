@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,7 @@ namespace TicketTriage.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TicketsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -64,7 +66,7 @@ namespace TicketTriage.Api
         }
 
 
-
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> CretaeTicket(CreateTicketRequest request)
         {
