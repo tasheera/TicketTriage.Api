@@ -1,0 +1,46 @@
+name: Deploy to Heroku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Ensure Heroku app uses container stack
+        run: |
+          curl -X PATCH https://api.heroku.com/apps/$HEROKU_APP_NAME \
+            -d '{"build_stack": "container"}' \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer $HEROKU_API_KEY"
+
+      - name: Log in to Heroku Container Registry
+        run: |
+          echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+
+      - name: Build Docker image
+        run: |
+          docker build -t registry.heroku.com/$HEROKU_APP_NAME/web .
+
+      - name: Push image to Heroku
+        run: |
+          docker push registry.heroku.com/$HEROKU_APP_NAME/web
+
+      - name: Release the image
+        run: |
+          IMAGE_ID=$(docker inspect registry.heroku.com/$HEROKU_APP_NAME/web --format={{.Id}})
+          curl -X PATCH https://api.heroku.com/apps/$HEROKU_APP_NAME/formation \
+            -d '{"updates":[{"type":"web","docker_image":"'"$IMAGE_ID"'"}]}' \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3.docker-releases" \
+            -H "Authorization: Bearer $HEROKU_API_KEY"

@@ -18,4 +18,5 @@ COPY --from=build /app/publish .
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-ENTRYPOINT ["dotnet", "TicketTriage.Api.dll"]
+# Use CMD instead of ENTRYPOINT to evaluate the $PORT variable provided by Heroku
+CMD dotnet TicketTriage.Api.dll --urls "http://*:$PORT"
