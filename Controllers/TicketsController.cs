@@ -13,10 +13,14 @@ namespace TicketTriage.Api
         private readonly AppDbContext _context;
         private readonly GroqService _groq;
 
-        public TicketsController(AppDbContext context, GroqService groq)
+        private readonly IEmailService _emailService;
+
+
+        public TicketsController(AppDbContext context, GroqService groq, IEmailService emailService)
         {
             _context = context;
             _groq = groq;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -99,6 +103,8 @@ namespace TicketTriage.Api
 
             await _context.SaveChangesAsync();
 
+            await _emailService.SendConfirmationAsync(ticket);
+            
             return CreatedAtAction(
                 nameof(GetTicket),
                 new { id = ticket.Id },
