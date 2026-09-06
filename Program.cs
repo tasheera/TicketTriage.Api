@@ -64,6 +64,14 @@ builder.Services.AddAuthorization();
 //reg auth tokenserive
 builder.Services.AddScoped<TokenService>();
 
+
+//bind settings from appsettings.json
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+//register email service
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+
 // Add services to the container.
 
 builder.Services.AddControllers();
