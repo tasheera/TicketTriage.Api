@@ -103,14 +103,17 @@ namespace TicketTriage.Api
 
             await _context.SaveChangesAsync();
 
-            try
+            _ = Task.Run(async () => // fire and forget
             {
-                await _emailService.SendConfirmationAsync(ticket);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send confirmation email for ticket #{TicketId}", ticket.Id);
-            }
+                try
+                {
+                    await _emailService.SendConfirmationAsync(ticket);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send confirmation email for ticket #{TicketId}", ticket.Id);
+                }
+            });
 
             return CreatedAtAction(
                 nameof(GetTicket),
