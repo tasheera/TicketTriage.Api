@@ -117,6 +117,8 @@ namespace TicketTriage.Api
                 }
             });
 
+            _logger.LogInformation( "Ticket #{TicketId} created", ticket.Id);
+
             return CreatedAtAction(
                 nameof(GetTicket),
                 new { id = ticket.Id },
@@ -163,6 +165,8 @@ namespace TicketTriage.Api
 
             ticket.Status = newStatus;
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Ticket #{TicketId} status updated to {Status}", id, newStatus);
 
             return Ok(ticket.ToResponse());
 
