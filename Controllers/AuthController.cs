@@ -10,11 +10,13 @@ namespace TicketTriage.Api
     {
         private readonly AppDbContext _context;
         private readonly TokenService _tokenService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AppDbContext context, TokenService tokenService)
+        public AuthController(AppDbContext context, TokenService tokenService, ILogger<AuthController> logger)
         {
             _context = context;
             _tokenService = tokenService;
+            _logger = logger;
         }
 
 
@@ -25,6 +27,7 @@ namespace TicketTriage.Api
 
             if(agent is null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, agent.PasswordHash))
             {
+                _logger.LogWarning("Failed login attempt for email: {Email}", loginRequest.Email);
                 return Problem(
                     statusCode:401,
                     title: "Invalid credentials",
@@ -33,6 +36,8 @@ namespace TicketTriage.Api
             }
 
             var token = _tokenService.GenerateToken(agent);
+
+            _logger.LogInformation("Agent {Email} logged in successfully", agent.Email);
 
             return Ok(new LoginResponse(
                 Token: token,
