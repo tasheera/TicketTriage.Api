@@ -1,10 +1,16 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Unicode;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TicketTriage.Api;
+
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using Microsoft.AspNetCore.HttpOverrides;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +78,54 @@ builder.Services.Configure<EmailSettings>(
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+
+    // Heroku uses dynamic proxy IPs
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// register rate limiter
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("TicketSubmission", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }
+        )
+    );
+
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        var problem = new ProblemDetails
+        {
+            Title = "Too Many Requests",
+            Status = 429,
+            Detail = "You have submitted too many tickets. Please wait a minute before trying again."
+        };
+
+        await context.HttpContext.Response.WriteAsync(
+            JsonSerializer.Serialize(problem),
+            cancellationToken
+        );
+    };
+});
+
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -120,13 +174,17 @@ using (var scope = app.Services.CreateScope())
 }
 
 
-app.UseHttpsRedirection();
 
+app.UseForwardedHeaders();
+
+app.UseHttpsRedirection();
 
 app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter(); 
 
 app.MapControllers();
 
