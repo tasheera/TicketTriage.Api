@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace TicketTriage.Api
@@ -71,6 +72,7 @@ namespace TicketTriage.Api
 
 
         [AllowAnonymous]
+        [EnableRateLimiting("TicketSubmission")]
         [HttpPost]
         public async Task<IActionResult> CretaeTicket(CreateTicketRequest request)
         {
