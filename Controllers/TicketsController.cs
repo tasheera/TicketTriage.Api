@@ -166,6 +166,18 @@ namespace TicketTriage.Api
             ticket.Status = newStatus;
             await _context.SaveChangesAsync();
 
+            _ = Task.Run(async () => // fire and forget
+           {
+               try
+               {
+                   await _emailService.SendStatusUpdateAsync(ticket);
+               }
+               catch (Exception ex)
+               {
+                   _logger.LogWarning(ex, "Failed to send status update email for ticket #{TicketId}", ticket.Id);
+               }
+           });
+
             _logger.LogInformation("Ticket #{TicketId} status updated to {Status}", id, newStatus);
 
             return Ok(ticket.ToResponse());
