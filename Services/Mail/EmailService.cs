@@ -20,7 +20,7 @@ public class EmailService : IEmailService
     public async Task SendConfirmationAsync(Ticket ticket)
     {
         {
-            var subject = $"Ticket #{ticket.Id} Received ✅";
+            var subject = $"Ticket #{ticket.Id} Received 🎫";
 
             var body = $"""
         <h2>Hi {ticket.CustomerName}, we've received your support ticket!</h2>
@@ -41,6 +41,45 @@ public class EmailService : IEmailService
             await SendEmailAsync(ticket.CustomerEmail, subject, body);
         }
     }
+
+    public async Task SendStatusUpdateAsync(Ticket ticket)
+    {
+        if (ticket.Status == TicketStatus.InProgress)
+        {
+            await SendInprogressStatusUpdateAsync(ticket);
+        }
+        else if (ticket.Status == TicketStatus.Resolved)
+        {
+            await SendResolvedStatusUpdateAsync(ticket);
+        }
+    }
+
+    private async Task SendInprogressStatusUpdateAsync(Ticket ticket)
+    {
+        var subject = $"Your ticket #{ticket.Id} is being looked at ⏳";
+
+        var body = $"""
+        <h2>Hi {ticket.CustomerName}, your ticket "{ticket.Subject}" is now In Progress</h2>
+        <p>We're working on it and will update you soon.</p>
+        """;
+
+        await SendEmailAsync(ticket.CustomerEmail, subject, body);
+
+    }
+
+    private async Task SendResolvedStatusUpdateAsync(Ticket ticket)
+    {
+        var subject = $"Your ticket #{ticket.Id} has been resolved ✅";
+
+        var body = $"""
+        <h2>Hi {ticket.CustomerName}, your ticket "{ticket.Subject}" has been resolved</h2>
+        <p>If you're still experiencing issues, please submit a new ticket.</p>
+        """;
+
+        await SendEmailAsync(ticket.CustomerEmail, subject, body);
+
+    }
+
 
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
