@@ -28,10 +28,16 @@ namespace TicketTriage.Api
         public async Task<IActionResult> GetAllTickets(
             [FromQuery] string? status,
             [FromQuery] string? category,
-            [FromQuery] string? priority
+            [FromQuery] string? priority,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize= 20
         )
 
         {
+            page = Math.Max(1,page);
+            pageSize = Math.Clamp(pageSize,1,100);
+
+            
             IQueryable<Ticket> tickets = _context.Tickets;
 
             //status filter
@@ -62,11 +68,28 @@ namespace TicketTriage.Api
 
 
             //sorting
-            var ticketList = await tickets
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
+            var orderedTickets = tickets.OrderByDescending(t=> t.CreatedAt);
 
-            return Ok(ticketList.Select(t => t.ToResponse()).ToList());
+            var totalCount = await orderedTickets.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double) pageSize);
+
+            var items = await orderedTickets
+            .Skip((page-1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+            var response = new PagedResponse<TicketResponse>
+            {
+                Items = items.Select(t => t.ToResponse()).ToList(),
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                HasPreviousPage = page > 1,
+                HasNextPage = page< totalPages
+            };
+
+            return Ok(response);
 
         }
 
