@@ -69,7 +69,18 @@ public class GroqService
         {
 
             var httpResponse = await _httpClient.PostAsJsonAsync("chat/completions", request);
-            httpResponse.EnsureSuccessStatusCode();
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                var errorBody = await httpResponse.Content.ReadAsStringAsync();
+
+                _logger.LogError(
+                    "Groq classification failed. Status: {StatusCode}, Model: {Model}, Response: {Response}",
+                    (int)httpResponse.StatusCode,
+                    _model,
+                    errorBody);
+
+                return null;
+            }
 
             var groqResponse = await httpResponse.Content.ReadFromJsonAsync<GroqChatResponse>();
             var content = groqResponse!.Choices[0].Message.Content;
